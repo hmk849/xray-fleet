@@ -16,10 +16,12 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, subprocess
-          hosting = ("hosting", "vpn", "datacenter", "data center", "colocation",
+          hosting = ("hosting", "host", "vpn", "datacenter", "data center", "colocation",
                      "colo", "cloud", "amazon", "digitalocean", "ovh", "hetzner",
                      "linode", "vultr", "contabo", "m247", "choopa", "leaseweb",
-                     "3xk", "serverius", "psychz", "hostkey", "aeza")
+                     "3xk", "serverius", "psychz", "hostkey", "aeza",
+                     "godaddy", "namecheap", "ionos", "akamai", "cloudflare",
+                     "fastly", "quadranet", "bluehost", "hostgator", "hostinger")
           urls = [l.strip() for l in os.environ["UR_PROXIES"].splitlines() if l.strip()]
           n_clean = n_host = n_dead = 0
           for i, url in enumerate(urls, 1):
