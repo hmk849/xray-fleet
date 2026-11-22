@@ -21,7 +21,8 @@ jobs:
                      "linode", "vultr", "contabo", "m247", "choopa", "leaseweb",
                      "3xk", "serverius", "psychz", "hostkey", "aeza",
                      "godaddy", "namecheap", "ionos", "akamai", "cloudflare",
-                     "fastly", "quadranet", "bluehost", "hostgator", "hostinger")
+                     "fastly", "quadranet", "bluehost", "hostgator", "hostinger",
+                     "oracle")
           urls = [l.strip() for l in os.environ["UR_PROXIES"].splitlines() if l.strip()]
           n_clean = n_host = n_dead = 0
           def check_one(url):
