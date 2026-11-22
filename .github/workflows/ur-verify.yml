@@ -24,31 +24,38 @@ jobs:
                      "fastly", "quadranet", "bluehost", "hostgator", "hostinger")
           urls = [l.strip() for l in os.environ["UR_PROXIES"].splitlines() if l.strip()]
           n_clean = n_host = n_dead = 0
+          def check_one(url):
+              """Return (ip, country, city, org) or None. Tries ipwho.is first,
+              falls back to ipinfo.io (its anonymous tier 429s some shared
+              residential exit IPs)."""
+              for endpoint, parse in (
+                      ("https://ipwho.is/", lambda d: (
+                          d.get("ip"), d.get("country_code"), d.get("city"),
+                          (d.get("connection") or {}).get("org"))),
+                      ("https://ipinfo.io/json", lambda d: (
+                          d.get("ip"), d.get("country"), d.get("city"), d.get("org")))):
+                  for attempt in (1, 2):
+                      try:
+                          r = subprocess.run(
+                              ["curl", "-s", "-m", "60", "--proxy", url, endpoint],
+                              capture_output=True, text=True, timeout=75)
+                          d = json.loads(r.stdout)
+                          ip, cc, city, org = parse(d)
+                          if ip:
+                              return ip, cc, city, org
+                      except Exception:
+                          pass
+                      if attempt == 1:
+                          time.sleep(5)
+              return None
+
           for i, url in enumerate(urls, 1):
-              d = None
-              diag = ""
-              for attempt in (1, 2):
-                  try:
-                      r = subprocess.run(
-                          ["curl", "-s", "-m", "60", "-w", "\n%{http_code}",
-                           "--proxy", url, "https://ipinfo.io/json"],
-                          capture_output=True, text=True, timeout=75)
-                      body = r.stdout.rsplit("\n", 1)[0]
-                      diag = f"curl rc={r.returncode} http={r.stdout.rsplit(chr(10), 1)[-1]} body={body[:120]!r}"
-                      d = json.loads(body)
-                      if d.get("ip"):
-                          break
-                      d = None
-                  except Exception as e:
-                      diag = f"exc {type(e).__name__}: {str(e)[:120]}"
-                      d = None
-                  if attempt == 1:
-                      time.sleep(5)
-              if d is None:
+              got = check_one(url)
+              if got is None:
                   n_dead += 1
-                  print(f"[{i}] DEAD ({diag})")
+                  print(f"[{i}] DEAD")
                   continue
-              ip, cc, city, org = d.get("ip"), d.get("country"), d.get("city"), d.get("org")
+              ip, cc, city, org = got
               verdict = "HOSTING" if org and any(w in org.lower() for w in hosting) else "clean"
               if verdict == "clean":
                   n_clean += 1
